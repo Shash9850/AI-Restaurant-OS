@@ -10,9 +10,20 @@ from app.api.order_routes import router as order_router
 
 from app.api.public_routes import router as public_router
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(
+    
     title="AI Restaurant OS API",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(
