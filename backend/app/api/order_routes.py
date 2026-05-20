@@ -7,6 +7,8 @@ from app.models.order import Order
 from app.models.order_item import OrderItem
 from app.models.menu_item import MenuItem
 
+from sqlalchemy.orm import joinedload
+
 from app.schemas.order_schema import (
     CreateOrderSchema
 )
@@ -77,4 +79,69 @@ def create_order(
         "status": "success",
         "order_id": order.id,
         "total_amount": total_amount
+    }
+
+
+@router.get("/all")
+def get_all_orders(
+    db: Session = Depends(get_db)
+):
+
+    orders = db.query(Order).options(
+        joinedload(Order.table),
+        joinedload(Order.restaurant)
+    ).all()
+
+    response_data = []
+
+    for order in orders:
+
+        order_items = db.query(OrderItem).options(
+            joinedload(OrderItem.menu_item)
+        ).filter(
+            OrderItem.order_id == order.id
+        ).all()
+
+        response_data.append({
+            "id": order.id,
+            "customer_name": order.customer_name,
+            "order_status": order.order_status,
+            "payment_status": order.payment_status,
+            "total_amount": order.total_amount,
+            "notes": order.notes,
+            "created_at": order.created_at,
+            "items": order_items
+        })
+
+    return {
+        "status": "success",
+        "data": response_data
+    }
+
+
+@router.put("/{order_id}/status")
+def update_order_status(
+    order_id: int,
+    status: str,
+    db: Session = Depends(get_db)
+):
+
+    order = db.query(Order).filter(
+        Order.id == order_id
+    ).first()
+
+    if not order:
+
+        return {
+            "status": "error",
+            "message": "Order not found"
+        }
+
+    order.order_status = status
+
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": "Order status updated"
     }
