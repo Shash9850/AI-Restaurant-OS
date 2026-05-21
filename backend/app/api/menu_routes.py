@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from fastapi import UploadFile, File
+import shutil
+import uuid
+
 from app.database.database import SessionLocal
 
 from app.models.menu_category import MenuCategory
@@ -99,4 +103,32 @@ def get_menu_items(
         "status": "success",
         "count": len(items),
         "data": items
+    }
+
+
+
+@router.post("/upload-image")
+def upload_menu_image(
+    file: UploadFile = File(...)
+):
+
+    unique_filename = (
+        f"{uuid.uuid4()}_{file.filename}"
+    )
+
+    file_path = (
+        f"uploads/{unique_filename}"
+    )
+
+    with open(file_path, "wb") as buffer:
+
+        shutil.copyfileobj(
+            file.file,
+            buffer
+        )
+
+    return {
+        "status": "success",
+        "image_url":
+        f"http://127.0.0.1:8000/uploads/{unique_filename}"
     }

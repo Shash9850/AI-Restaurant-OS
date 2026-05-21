@@ -37,6 +37,7 @@ export default function MenuPage() {
     is_veg: true,
     spicy_level: "",
     preparation_time: "",
+    image_url: "",
   });
 
   const token =
@@ -49,6 +50,47 @@ export default function MenuPage() {
     fetchMenuItems();
 
   }, []);
+
+
+  const uploadImage = async (
+  file: File
+) => {
+
+  try {
+
+    const formData = new FormData();
+
+    formData.append(
+      "file",
+      file
+    );
+
+    const response = await api.post(
+      "/menu/upload-image",
+      formData,
+      {
+        headers: {
+          "Content-Type":
+            "multipart/form-data",
+        },
+      }
+    );
+
+    setItemForm({
+      ...itemForm,
+      image_url:
+        response.data.image_url,
+    });
+
+    alert("Image uploaded");
+
+  } catch (error) {
+
+    console.log(error);
+
+    alert("Upload failed");
+  }
+};
 
   const fetchMenuItems = async () => {
 
@@ -111,6 +153,7 @@ export default function MenuPage() {
         "/menu/items",
         {
           ...itemForm,
+          image_url: itemForm.image_url,
           category_id: Number(itemForm.category_id),
           price: Number(itemForm.price),
           preparation_time: Number(
@@ -268,6 +311,39 @@ export default function MenuPage() {
               }
               className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700"
             />
+
+            <div>
+
+  <input
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+
+      if (
+        e.target.files &&
+        e.target.files[0]
+      ) {
+
+        uploadImage(
+          e.target.files[0]
+        );
+      }
+    }}
+    className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700"
+  />
+
+  {
+    itemForm.image_url && (
+
+      <img
+        src={itemForm.image_url}
+        alt="Preview"
+        className="w-32 h-32 object-cover rounded-xl mt-4"
+      />
+    )
+  }
+
+</div>
 
             <button
               onClick={createMenuItem}

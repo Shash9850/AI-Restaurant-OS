@@ -33,7 +33,8 @@ class MenuItem(Base, TimestampMixin):
 
     price = Column(Float, nullable=False)
 
-    image_url = Column(String)
+    
+    image_url = Column(String, nullable=True)
 
     is_veg = Column(Boolean, default=True)
 

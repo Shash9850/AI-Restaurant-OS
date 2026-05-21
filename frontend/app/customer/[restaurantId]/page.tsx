@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
+import AIWaiter from "@/components/ai/AIWaiter";
+
 import api from "@/services/api";
 
 type MenuItem = {
@@ -12,6 +14,7 @@ type MenuItem = {
   price: number;
   is_veg: boolean;
   spicy_level: string;
+  image_url?: string;
 };
 
 type Category = {
@@ -94,41 +97,47 @@ export default function CustomerMenuPage() {
     }
   };
 
-  const removeFromCart = (
-    itemId: number
-  ) => {
 
-    const existingItem = cart.find(
-      (cartItem) =>
-        cartItem.item.id === itemId
+const removeFromCart = (
+  itemId: number
+) => {
+
+  const existingItem = cart.find(
+    (cartItem) =>
+      cartItem.item.id === itemId
+  );
+
+  if (!existingItem) return;
+
+  if (existingItem.quantity === 1) {
+
+    setCart(
+      cart.filter(
+        (cartItem) =>
+          cartItem.item.id !== itemId
+      )
     );
 
-    if (!existingItem) return;
+  } else {
 
-    if (existingItem.quantity === 1) {
+    setCart(
+      cart.map((cartItem) =>
+        cartItem.item.id === itemId
+          ? {
+              ...cartItem,
+              quantity:
+                cartItem.quantity - 1,
+            }
+          : cartItem
+      )
+    );
+  }
+};
 
-      setCart(
-        cart.filter(
-          (cartItem) =>
-            cartItem.item.id !== itemId
-        )
-      );
+const clearCart = () => {
 
-    } else {
-
-      setCart(
-        cart.map((cartItem) =>
-          cartItem.item.id === itemId
-            ? {
-                ...cartItem,
-                quantity:
-                  cartItem.quantity - 1,
-              }
-            : cartItem
-        )
-      );
-    }
-  };
+  setCart([]);
+};
 
   const getTotal = () => {
 
@@ -224,57 +233,80 @@ export default function CustomerMenuPage() {
                       className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5"
                     >
 
-                      <div className="flex items-start justify-between gap-4">
+<div className="flex gap-4">
 
-                        <div>
+  {
+    item.image_url ? (
 
-                          <h3 className="text-xl font-semibold mb-2">
-                            {item.name}
-                          </h3>
+      <img
+        src={item.image_url}
+        alt={item.name}
+        className="w-28 h-28 object-cover rounded-2xl"
+      />
 
-                          <p className="text-zinc-400 text-sm mb-4">
-                            {item.description}
-                          </p>
+    ) : (
 
-                          <div className="flex gap-2 text-xs">
+      <div className="w-28 h-28 rounded-2xl bg-zinc-800 flex items-center justify-center text-zinc-500 text-sm">
 
-                            <span className="bg-zinc-800 px-3 py-1 rounded-full">
-                              {
-                                item.is_veg
-                                  ? "Veg"
-                                  : "Non-Veg"
-                              }
-                            </span>
+        No Image
 
-                            <span className="bg-zinc-800 px-3 py-1 rounded-full">
-                              {item.spicy_level}
-                            </span>
+      </div>
+    )
+  }
 
-                          </div>
+  <div className="flex-1 flex items-start justify-between gap-4">
 
-                        </div>
+    <div>
 
-                        <div className="text-right">
+      <h3 className="text-xl font-semibold mb-2">
+        {item.name}
+      </h3>
 
-                          <p className="text-xl font-bold mb-4">
-                            ₹{item.price}
-                          </p>
+      <p className="text-zinc-400 text-sm mb-4">
+        {item.description}
+      </p>
 
-                          <button
-                            onClick={() => addToCart(item)}
-                            className="bg-white text-black px-4 py-2 rounded-lg font-semibold"
-                          >
-                            Add
-                          </button>
+      <div className="flex gap-2 text-xs">
 
-                        </div>
+        <span className="bg-zinc-800 px-3 py-1 rounded-full">
+          {
+            item.is_veg
+              ? "Veg"
+              : "Non-Veg"
+          }
+        </span>
 
-                      </div>
+        <span className="bg-zinc-800 px-3 py-1 rounded-full">
+          {item.spicy_level}
+        </span>
+
+      </div>
+
+    </div>
+
+    <div className="text-right">
+
+      <p className="text-xl font-bold mb-4">
+        ₹{item.price}
+      </p>
+
+      <button
+        onClick={() => addToCart(item)}
+        className="bg-white text-black px-4 py-2 rounded-lg font-semibold"
+      >
+        Add
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
 
                     </div>
+
                   ))
                 }
-
               </div>
 
             </div>
@@ -409,7 +441,14 @@ export default function CustomerMenuPage() {
           </div>
         )
       }
-
+<AIWaiter
+  menu={menu}
+  addToCart={addToCart}
+  removeFromCart={
+    removeFromCart
+  }
+  clearCart={clearCart}
+/>
     </main>
   );
 }

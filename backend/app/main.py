@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from app.api.menu_routes import router as menu_router
 
@@ -12,10 +13,18 @@ from app.api.public_routes import router as public_router
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.ai_routes import router as ai_router
+
 app = FastAPI(
     
     title="AI Restaurant OS API",
     version="1.0.0"
+)
+
+app.mount(
+    "/uploads",
+    StaticFiles(directory="uploads"),
+    name="uploads"
 )
 
 app.add_middleware(
@@ -52,6 +61,8 @@ app.include_router(
     prefix="/public",
     tags=["Public APIs"]
 )
+
+app.include_router(ai_router)
 
 @app.get("/")
 def root():
