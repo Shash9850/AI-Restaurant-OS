@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import api from "@/services/api";
 import { useParams } from "next/navigation";
+import AIAvatar from
+"@/components/avatar/AIAvatar";
 
 
 type MenuItem = {
@@ -59,8 +61,237 @@ export default function AIWaiter({
           "Hello 👋 I am your AI waiter. What would you like to eat today?",
       },
     ]);
+    const [isTalking, setIsTalking] =
+  useState(false);
+
+  const [isListening, setIsListening] =
+  useState(false);
+
+  const [isThinking, setIsThinking] =
+  useState(false);
 
     const params = useParams();
+
+
+    const startListening = () => {
+
+ const SpeechRecognition =
+  (
+    window as any
+  ).SpeechRecognition ||
+  (
+    window as any
+  ).webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+
+    alert(
+      "Speech recognition not supported"
+    );
+
+    return;
+  }
+
+  const recognition =
+    new SpeechRecognition();
+
+  recognition.lang = "en-IN";
+
+  recognition.start();
+
+  setIsListening(true);
+
+  recognition.onresult = (
+    event: any
+  ) => {
+
+    const transcript =
+      event.results[0][0]
+      .transcript;
+
+    setInput(transcript);
+
+setTimeout(() => {
+
+  sendVoiceMessage(
+    transcript
+  );
+
+}, 500);
+
+    setIsListening(false);
+  };
+
+  recognition.onerror = () => {
+
+    setIsListening(false);
+  };
+
+  recognition.onend = () => {
+
+    setIsListening(false);
+  };
+};
+
+const sendVoiceMessage =
+async (
+  transcript: string
+) => {
+
+  const userMessage = {
+    role: "user" as const,
+    content: transcript,
+  };
+
+  setMessages((prev) => [
+    ...prev,
+    userMessage,
+  ]);
+
+  try {
+
+    setIsThinking(true);
+
+    const response =
+      await api.post(
+        "/ai/chat",
+        {
+          restaurant_id:
+            Number(
+              params.restaurantId
+            ),
+          message:
+            transcript,
+          history:
+            messages,
+        }
+      );
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          response.data.reply,
+
+      },
+    ]);
+    speakText(
+  response.data.reply
+);
+
+if (
+  response.data.actions
+) {
+
+  for (
+    const action
+    of response.data.actions
+  ) {
+
+    // ADD TO CART
+
+    if (
+      action.type ===
+      "add_to_cart"
+    ) {
+
+      const itemId =
+        action.item_id;
+
+      const matchedItem =
+        menu
+          .flatMap(
+            (category) =>
+              category.items
+          )
+          .find(
+            (item) =>
+              item.id === itemId
+          );
+
+      if (matchedItem) {
+
+        for (
+          let i = 0;
+          i < action.quantity;
+          i++
+        ) {
+
+          addToCart(
+            matchedItem
+          );
+        }
+      }
+    }
+
+    // REMOVE ITEM
+
+    if (
+      action.type ===
+      "remove_from_cart"
+    ) {
+
+      removeFromCart(
+        action.item_id
+      );
+    }
+
+    // CLEAR CART
+
+    if (
+      action.type ===
+      "clear_cart"
+    ) {
+
+      clearCart();
+    }
+  }
+}
+    
+setIsThinking(false);
+  } catch (error) {
+
+    setIsThinking(false);
+
+    console.log(error);
+  }
+};
+
+
+
+const speakText = (
+  text: string
+) => {
+
+  const speech =
+    new SpeechSynthesisUtterance(
+      text
+    );
+
+  speech.lang = "en-IN";
+
+  speech.rate = 1;
+
+  speech.pitch = 1;
+
+speech.onstart = () => {
+
+  setIsTalking(true);
+};
+
+speech.onend = () => {
+
+  setIsTalking(false);
+};
+
+  window.speechSynthesis.speak(
+    speech
+  );
+};
+
+
+
  const sendMessage = async () => {
 
   if (!input.trim()) return;
@@ -71,6 +302,7 @@ export default function AIWaiter({
   };
 
   setMessages((prev) => [
+    
     ...prev,
     userMessage,
   ]);
@@ -81,6 +313,8 @@ export default function AIWaiter({
 
   try {
 
+    
+    setIsThinking(true);
     const response = await api.post(
       "/ai/chat",
       {
@@ -102,6 +336,10 @@ export default function AIWaiter({
       },
     ]);
 
+    speakText(
+  response.data.reply
+);
+setIsThinking(false);
   if (
   response.data.actions
 ) {
@@ -172,7 +410,8 @@ export default function AIWaiter({
 }
 
   } catch (error) {
-
+    
+    setIsThinking(false);
     console.log(error);
 
     setMessages((prev) => [
@@ -183,6 +422,7 @@ export default function AIWaiter({
           "Sorry, I could not process your request.",
       },
     ]);
+    
   }
 };
 
@@ -202,6 +442,16 @@ export default function AIWaiter({
         isOpen && (
 
           <div className="fixed bottom-44 right-5 w-[360px] h-[550px] bg-zinc-950 border border-zinc-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden z-50">
+
+            <div className="flex justify-center pt-6 bg-black">
+
+ <AIAvatar
+  isTalking={isTalking}
+  isListening={isListening}
+  isThinking={isThinking}
+/>
+
+</div>
 
             <div className="border-b border-zinc-800 p-5">
 
@@ -257,6 +507,21 @@ export default function AIWaiter({
                   className="flex-1 bg-zinc-900 text-white border border-zinc-800 rounded-xl px-4 py-3 outline-none"
                 />
 
+
+<button
+  onClick={startListening}
+  className={`
+    px-4 rounded-xl text-xl
+
+    ${
+      isListening
+        ? "bg-red-500 text-white"
+        : "bg-zinc-800 text-white"
+    }
+  `}
+>
+  🎤
+</button>
                 <button
                   onClick={sendMessage}
                   className="bg-white text-black px-5 rounded-xl font-semibold"
